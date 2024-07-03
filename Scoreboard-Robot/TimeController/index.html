@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Controller</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .timer-circle {
+            width: 250px;
+            height: 250px;
+            border-radius: 100%;
+            background: conic-gradient(#f00 0%, #f00 var(--percentage), #eee var(--percentage), #eee 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 44px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .timer-inner {
+            background-color: #007bff;
+            border-radius: 50%;
+            width: 85%;
+            height: 85%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center min-h-screen bg-gray-100">
+    <div class="text-center">
+        <h1 class="text-5xl font-bold mb-8">Timer Controller</h1>
+        <div class="flex justify-around mb-8 gap-5">
+            <div class="flex flex-col items-center">
+                <div class="timer-circle mb-4" id="timer1" style="--percentage: 0%;">
+                    <div class="timer-inner" id="timer1-display">10</div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="stopTimer(1)">STOP</button>
+                    <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="startTimer(1, 10)">PLAY</button>
+                    <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="resetTimer(1, 10)">RESET</button>
+                </div>
+            </div>
+            <!-- <div class="flex flex-col items-center">
+                <div class="timer-circle mb-4" id="timer3" style="--percentage: 0%;">
+                    <div class="timer-inner" id="timer3-display">10</div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="stopTimer(3)">STOP</button>
+                    <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="startTimer(3, 10)">PLAY</button>
+                    <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="resetTimer(3, 10)">RESET</button>
+                </div>
+            </div> -->
+            <div class="flex flex-col items-center">
+                <div class="timer-circle mb-4" id="timer2" style="--percentage: 0%;">
+                    <div class="timer-inner" id="timer2-display">3:00</div>
+                </div>
+                <div class="flex space-x-2">
+                    <button class="bg-red-500 text-white px-4 py-2 rounded" onclick="stopTimer(2)">STOP</button>
+                    <button class="bg-green-500 text-white px-4 py-2 rounded" onclick="startTimer(2, 180)">PLAY</button>
+                    <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="resetTimer(2, 180)">RESET</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let timers = {};
+
+        function startTimer(timerId, duration) {
+            let timeLeft = parseInt(localStorage.getItem('timer' + timerId + 'TimeLeft')) || duration;
+            localStorage.setItem('timer' + timerId + 'TimeLeft', timeLeft);
+            localStorage.setItem('timer' + timerId + 'Running', 'true');
+            if (timerId === 1) {
+                localStorage.setItem('overlayVisible', 'true');
+            }
+
+            if (timers[timerId]) clearInterval(timers[timerId]);
+
+            timers[timerId] = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(timers[timerId]);
+                    localStorage.setItem('timer' + timerId + 'Running', 'false');
+                    if (timerId === 1) {
+                        localStorage.setItem('overlayVisible', 'false');
+                    }
+                }
+                localStorage.setItem('timer' + timerId + 'TimeLeft', timeLeft);
+                updateLocalTimerDisplay(timerId, timeLeft, duration);
+            }, 1000);
+        }
+
+        function stopTimer(timerId) {
+            if (timers[timerId]) clearInterval(timers[timerId]);
+            localStorage.setItem('timer' + timerId + 'Running', 'false');
+        }
+
+        function resetTimer(timerId, duration) {
+            stopTimer(timerId);
+            localStorage.setItem('timer' + timerId + 'TimeLeft', duration);
+            localStorage.setItem('timer' + timerId + 'Running', 'false');
+            updateLocalTimerDisplay(timerId, duration, duration);
+            if (timerId === 1) {
+                localStorage.setItem('overlayVisible', 'false');
+            }
+        }
+
+        function updateLocalTimerDisplay(timerId, timeLeft, duration) {
+            let percentage = ((duration - timeLeft) / duration) * 100;
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById('timer' + timerId).style.setProperty('--percentage', percentage + '%');
+            document.querySelector('#timer' + timerId + ' .timer-inner').textContent = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+        }
+
+        window.onload = function () {
+            [1, 2].forEach(timerId => {
+                let timeLeft = parseInt(localStorage.getItem('timer' + timerId + 'TimeLeft'), 10) || (timerId === 1 ? 10 : 180);
+                let duration = timerId === 1 ? 10 : 180;
+                updateLocalTimerDisplay(timerId, timeLeft, duration);
+                if (localStorage.getItem('timer' + timerId + 'Running') === 'true') {
+                    startTimer(timerId, duration);
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

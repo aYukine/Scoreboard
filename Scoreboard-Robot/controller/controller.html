@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+    <div class="flex justify-between bg-white items-center p-4 text-slate-50 shadow-md">
+        <div class="flex flex-col items-center">
+            <h1 class="mb-3 text-4xl text-blue-700 font-extrabold">Team 1</h1>
+            <img src="/public/Logo.png" alt="Logo" width="150" height="150">
+        </div>
+        <div class="flex flex-col items-center font-extrabold">
+            <h1 class="mb-3 text-4xl text-red-700">Team 2</h1>
+            <img src="/public/Logo.png" alt="Logo" width="150" height="150">
+        </div>
+    </div>
+    <div class="p-8">
+        <div class="flex justify-between items-center p-10 bg-gray-900 rounded-lg shadow-xl">
+            <div class="bg-red-500 p-12 rounded-lg flex flex-col items-center">
+                <div class="text-2xl font-bold mb-2 text-slate-50">Team A</div>
+                <div class="text-9xl mb-6 text-slate-50 font-extrabold" id="score1">0</div>
+                <div class="mb-4 flex items-center gap-2">
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-green-500 font-extrabold" id="score1green">0</div>
+                        <button
+                            class="inline-block rounded bg-green-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScoreGreen('score1green')">+1</button>
+                    </div>
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-purple-500 font-extrabold" id="score1purple">0</div>
+                        <button
+                            class="inline-block rounded bg-purple-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScorePurple('score1purple')">+5</button>
+                    </div>
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-yellow-500 font-extrabold" id="score1yellow">0</div>
+                        <button
+                            class="inline-block rounded bg-yellow-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScoreYellow('score1yellow')">+10</button>
+                    </div>
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-blue-500 font-extrabold" id="score1blue">0</div>
+                        <button
+                            class="inline-block rounded bg-blue-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScoreBlue('score1blue')">+15</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col items-center">
+                <div class="text-9xl font-medium text-yellow-300 mb-7" id="timer">30:00</div>
+            </div>
+            <div class="bg-blue-500 p-12 rounded-lg flex flex-col items-center">
+                <div class="text-2xl font-bold mb-2 text-slate-50">Team B</div>
+                <div class="text-9xl mb-6 text-slate-50 font-extrabold" id="score2">0</div>
+                <div class="mb-4 flex items-center gap-2">
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-green-500 font-extrabold" id="score2green">0</div>
+                        <button
+                            class="inline-block rounded bg-green-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScoreGreen('score2green')">+1</button>
+                    </div>
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-purple-500 font-extrabold" id="score2purple">0</div>
+                        <button
+                            class="inline-block rounded bg-purple-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScorePurple('score2purple')">+5</button>
+                    </div>
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-yellow-500 font-extrabold" id="score2yellow">0</div>
+                        <button
+                            class="inline-block rounded bg-yellow-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScoreYellow('score2yellow')">+10</button>
+                    </div>
+                    <div class="items-center flex flex-col">
+                        <div class="text-2xl text-blue-500 font-extrabold" id="score2blue">0</div>
+                        <button
+                            class="inline-block rounded bg-blue-500 px-8 py-3 text-sm font-medium text-white hover:shadow-xl"
+                            onclick="incrementScoreBlue('score2blue')">+15</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex flex-col items-center">
+        <div class="items-center mb-3">
+            <button class="bg-yellow-500 text-white px-4 py-3 rounded mr-2" onclick="resetScores()">Reset
+                Scores</button>
+        </div>
+        <div class="flex gap-1">
+            <button class="bg-green-500 text-white px-4 py-3 rounded mr-2" onclick="startTimer()">Start Timer</button>
+            <button class="bg-red-500 text-white px-4 py-3 rounded mr-2" onclick="stopTimer()">Stop Timer</button>
+            <button class="bg-yellow-500 text-white px-4 py-3 rounded" onclick="resetTimer()">Reset Timer</button>
+        </div>
+    </div>
+    <script src="/controller/script.js"></script>
+</body>
+
+</html>
