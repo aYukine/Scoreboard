@@ -12,7 +12,12 @@ s.connect(('10.255.255.255', 1))
 IPAddr = s.getsockname()[0]
 s.close()
 
-d_time = 0
+ltime = 0
+timer_running = False
+state = "preparing"
+startTime = time.monotonic()
+PrepareTime = 60
+readyTime = 10
 
 score_data = {
     'plant1': 0,
@@ -22,8 +27,10 @@ score_data = {
     'harvest2': 0,
     'store2': 0,
     'silos': [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
-    'team1': "NPIC",
-    'team2': "NPIC"
+    'team1': "",
+    'team2': "",
+    "time": "",
+    "bg_hidden": 0
 }
 
 def updateFile(data, file_path):
@@ -104,8 +111,8 @@ async def handle_controller(websocket, path):
                         score_data['store2'] += 1
                         score_data['silos'][more] = appending_silo(score_data['silos'][more], 2)
 
-            updateFile(f"{score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*10}", "VData/score1.txt")
-            updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*10}", "VData/score2.txt")
+            updateFile(f"{score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*30}", "VData/score1.txt")
+            updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*30}", "VData/score2.txt")
 
             score_data_json = json.dumps(score_data)
             await broadcast_to_displays(score_data_json)
@@ -148,7 +155,7 @@ async def start_display():
         await asyncio.Future()
 
 def reset(t1:ttk.Entry, t2:ttk.Entry):
-    global score_data
+    global score_data, state, timer_running
     team1:str = t1.get()
     team2:str = t2.get()
     team1 = team1.split()
@@ -166,16 +173,61 @@ def reset(t1:ttk.Entry, t2:ttk.Entry):
         'store2': 0,
         'silos': [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]],
         'team1': team1,
-        "team2": team2
+        "team2": team2,
+        "time": "0:00",
+        "bg_hidden": 0
     }
-    
-    updateFile(f"{score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*10}", "VData/score1.txt")
-    updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*10}", "VData/score2.txt")
+
+    state = "preparing"
+    timer_running = False
+    updateFile("0:00", "VData/timer.txt")
+    updateFile(f"{score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*30}", "VData/score1.txt")
+    updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*30}", "VData/score2.txt")
     updateFile(f"{team1[1]}", "VData/team1.txt")
     updateFile(f"{team2[1]}", "VData/team2.txt")
     
 
     asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
+
+def timer():
+    global timer_running, ltime, startTime, state
+    while True:
+        if timer_running:
+            dTime = time.monotonic() - startTime
+            if state == "preparing":
+                if PrepareTime > dTime:
+                    ltime = PrepareTime - dTime
+                else:
+                    state = "ready"
+                    timer_running = False
+
+                score_data["bg_hidden"] = True
+            elif state == "ready":
+                if readyTime > dTime:
+                    ltime = readyTime - dTime
+                else:
+                    state = "play"
+                    startTime = time.monotonic()
+                score_data["bg_hidden"] = True
+            elif state == "play":
+                ltime = dTime
+                score_data["bg_hidden"] = False
+            if state == "preparing" or state == "ready":
+                score_data["time"] = f"{int(ltime)}"
+            else:
+                score_data["time"] = f"{int(ltime//60)}:{int(ltime%60):02}"
+            print(f"{int(ltime//60)}:{int(ltime%60)}")
+            updateFile(f"{int(ltime//60)}:{int(ltime%60):02}", "VData/timer.txt")
+            
+            asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
+            time.sleep(0.1)
+
+def startTImer():
+    global timer_running, ltime, startTime, state
+    if state == "preparing" or "ready":
+        startTime = time.monotonic()
+        timer_running = True
+    
     
 def run_gui():
     global root, controller_label, display_label
@@ -205,6 +257,9 @@ def run_gui():
     btt = ttk.Button(root, text="reset", command=lambda: reset(ent1, ent2))
     btt.pack()
 
+    t_btt = ttk.Button(root, text="Start Timer", command=startTImer)
+    t_btt.pack()
+
     update_connections()
 
     root.mainloop()
@@ -221,9 +276,12 @@ def run_servers():
 
 gui_thread = threading.Thread(target=run_gui)
 server_thread = threading.Thread(target=run_servers)
+timer_thread = threading.Thread(target=timer)
 
 gui_thread.start()
 server_thread.start()
+timer_thread.start()
 
 gui_thread.join()
 server_thread.join()
+timer_thread.join()

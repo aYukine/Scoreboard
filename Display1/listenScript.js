@@ -42,4 +42,5 @@ function updateScores(data) {
   }
   updateInfo("team1", data.team1[0], data.team1[1])
   updateInfo("team2", data.team2[0], data.team2[1])
+  document.getElementById("timerd").textContent = data.time;
 }
