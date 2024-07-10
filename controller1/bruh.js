@@ -21,7 +21,7 @@ socket.addEventListener('message', function (event) {
     console.log('Message from server ', event.data);
 });
 
-function sendData(team, area, index) {
+function sendData(team, area, index, type) {
     const data = {
         team: team,
         area: area,
@@ -45,6 +45,21 @@ document.getElementById('harvesting-plus-team2').addEventListener('click', funct
 for(let i=1;i<=5;i++){
   document.getElementById(`r${i}`).addEventListener('click', function () {sendData(1, 3, i-1);});
   document.getElementById(`b${i}`).addEventListener('click', function () {sendData(2, 3, i-1);});
+  document.getElementById(`u${i}`).addEventListener('click', function () {sendData(0, 3, i-1);});
+}
+
+function changeColor(columnId, color) {
+  const column = document.getElementById(columnId)
+  const circles = column.getElementsByClassName('circle')
+
+  for (let i = circles.length - 1; i >= 0; i--) {
+    // From bottom to top
+    const circle = circles[i]
+    if (circle.dataset.color === 'none') {
+      updateCircle(circle, color)
+      break
+    }
+  }
 }
 
 function changeColor(columnId, color) {

@@ -6,7 +6,10 @@ from tkinter import ttk
 import threading
 import socket
 import time
+import pygame
 
+pygame.init()
+ 
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.connect(('10.255.255.255', 1))
 IPAddr = s.getsockname()[0]
@@ -16,8 +19,11 @@ ltime = 0
 timer_running = False
 state = "preparing"
 startTime = time.monotonic()
-PrepareTime = 60
+PrepareTime = 20
 readyTime = 10
+
+startingsoundPlayed = False
+startingsound = pygame.mixer.Sound("public/starting.mp3")
 
 score_data = {
     'plant1': 0,
@@ -30,8 +36,14 @@ score_data = {
     'team1': "",
     'team2': "",
     "time": "",
-    "bg_hidden": 0
+    "bg_hidden": False,
+    "cheyyo": 0,
+    "cheyyoPlayed": 0
 }
+
+
+controller_connections = 0
+display_connected = False
 
 def updateFile(data, file_path):
   with open(file_path, 'w') as f:
@@ -47,8 +59,22 @@ def appending_silo(silo: list, ball: int):
 
     return silo
 
-controller_connections = 0
-display_connected = False
+def popping_silo(index):
+    tem = [2, 1, 0]
+    ball = 0
+    for i in tem:
+        if score_data['silos'][index][i] == 0:
+            continue
+        elif score_data['silos'][index][i] == 1:
+            score_data['silos'][index][i] = 0 
+            ball = 1
+            break
+        elif score_data['silos'][index][i] == 2:
+            score_data['silos'][index][i] = 0
+            ball = 2
+            break
+
+    return ball
 
 def update_connections():
     controller_label.config(text=f"Controller Connections: {controller_connections}")
@@ -57,6 +83,33 @@ def update_connections():
     else:
         display_label.config(text="Display Connected: No")
     root.after(100, update_connections)
+
+def findCHeyYo():
+    global score_data
+    r = 0
+    b = 0
+    for silo in score_data['silos']:
+        cheyyo = findSuccessful(silo)
+        if cheyyo == 1:
+            r += 1
+        elif cheyyo == 2:
+            b += 1
+    if r >= 3:
+        score_data['cheyyo'] = 1
+    elif b >= 3:
+        score_data['cheyyo'] = 2
+    else:
+        score_data['cheyyo'] = 0
+
+
+def findSuccessful(silo: list):
+    if (silo == [1, 2, 1] or silo == [2, 1, 1] or silo == [1, 1, 1]):
+        return 1
+    elif (silo == [2, 1, 2] or silo == [1, 2, 2] or silo == [2, 2, 2]):
+        return 2
+    else:
+        return 0
+
 
 async def handle_controller(websocket, path):
     global controller_connections
@@ -90,6 +143,7 @@ async def handle_controller(websocket, path):
                     if 0 in score_data['silos'][more]:
                         score_data['store1'] += 1
                         score_data['silos'][more] = appending_silo(score_data['silos'][more], 1)
+                        findCHeyYo()
 
             elif team == 2:
                 if area == 1:
@@ -110,12 +164,28 @@ async def handle_controller(websocket, path):
                     if 0 in score_data['silos'][more]:
                         score_data['store2'] += 1
                         score_data['silos'][more] = appending_silo(score_data['silos'][more], 2)
+                        findCHeyYo()
+
+            elif team == 0:
+                popped =popping_silo(more)
+                if popped != 0:
+                    score_data[f'store{popped}'] -=  1
+                    findCHeyYo()
 
             updateFile(f"{score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*30}", "VData/score1.txt")
             updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*30}", "VData/score2.txt")
 
+            if(score_data['cheyyo']!=0):
+                print(f"cheyyo: {score_data['cheyyo']}")
+
             score_data_json = json.dumps(score_data)
             await broadcast_to_displays(score_data_json)
+
+            if(score_data['cheyyo']!=0 and score_data['cheyyoPlayed']==0):
+                score_data['cheyyoPlayed'] = 1
+            
+            if(score_data['cheyyo'] == 0 and score_data['cheyyoPlayed']==1):
+                score_data['cheyyoPlayed'] = 0
 
     finally:
         controller_connections -= 1
@@ -155,7 +225,7 @@ async def start_display():
         await asyncio.Future()
 
 def reset(t1:ttk.Entry, t2:ttk.Entry):
-    global score_data, state, timer_running
+    global score_data, state, timer_running, startingsoundPlayed
     team1:str = t1.get()
     team2:str = t2.get()
     team1 = team1.split()
@@ -175,9 +245,12 @@ def reset(t1:ttk.Entry, t2:ttk.Entry):
         'team1': team1,
         "team2": team2,
         "time": "0:00",
-        "bg_hidden": 0
+        "bg_hidden": 0,
+        "cheyyo": 0,
+        "cheyyoPlayed": 0
     }
 
+    startingsoundPlayed = False
     state = "preparing"
     timer_running = False
     updateFile("0:00", "VData/timer.txt")
@@ -190,7 +263,7 @@ def reset(t1:ttk.Entry, t2:ttk.Entry):
     asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
 
 def timer():
-    global timer_running, ltime, startTime, state
+    global timer_running, ltime, startTime, state, startingsoundPlayed
     while True:
         if timer_running:
             dTime = time.monotonic() - startTime
@@ -200,15 +273,20 @@ def timer():
                 else:
                     state = "ready"
                     timer_running = False
+                    score_data["bg_hidden"] = False
 
-                score_data["bg_hidden"] = True
             elif state == "ready":
                 if readyTime > dTime:
                     ltime = readyTime - dTime
                 else:
                     state = "play"
                     startTime = time.monotonic()
-                score_data["bg_hidden"] = True
+                    score_data["bg_hidden"] = False
+                if ltime <= 4:
+                    if not startingsoundPlayed:
+                        startingsound.play()
+                        startingsoundPlayed = True
+
             elif state == "play":
                 ltime = dTime
                 score_data["bg_hidden"] = False
@@ -216,17 +294,17 @@ def timer():
                 score_data["time"] = f"{int(ltime)}"
             else:
                 score_data["time"] = f"{int(ltime//60)}:{int(ltime%60):02}"
-            print(f"{int(ltime//60)}:{int(ltime%60)}")
             updateFile(f"{int(ltime//60)}:{int(ltime%60):02}", "VData/timer.txt")
             
             asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
             time.sleep(0.1)
 
 def startTImer():
-    global timer_running, ltime, startTime, state
+    global timer_running, ltime, startTime, state, score_data
     if state == "preparing" or "ready":
         startTime = time.monotonic()
         timer_running = True
+        score_data['bg_hidden'] = True
     
     
 def run_gui():
