@@ -83,7 +83,6 @@ def update_connections():
         display_label.config(text="Display Connected: Yes")
     else:
         display_label.config(text="Display Connected: No")
-    root.after(100, update_connections)
 
 def findCHeyYo():
     global score_data
@@ -120,7 +119,6 @@ async def handle_controller(websocket, path):
     try:
         async for message in websocket:
             data = json.loads(message)
-            print(f"Controller received: {data}")
             team = data["team"]
             area = data["area"]
             more = data["index"]
@@ -175,6 +173,7 @@ async def handle_controller(websocket, path):
 
             updateFile(f"{score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*30}", "VData/score1.txt")
             updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*30}", "VData/score2.txt")
+            updateFileJson()
 
             if(score_data['cheyyo']!=0):
                 print(f"cheyyo: {score_data['cheyyo']}")
@@ -184,7 +183,7 @@ async def handle_controller(websocket, path):
 
             if(score_data['cheyyo']!=0 and score_data['cheyyoPlayed']==0):
                 winningsound.play()
-                print(f"{ltime//60}:{ltime%60}")
+                print(f"{int(ltime//60)}:{int(ltime%60)}")
                 score_data['cheyyoPlayed'] = 1
             
             if(score_data['cheyyo'] == 0 and score_data['cheyyoPlayed']==1):
@@ -227,10 +226,10 @@ async def start_display():
         print("Display server listening on port 8991")
         await asyncio.Future()
 
-def reset(t1:ttk.Entry, t2:ttk.Entry):
+def reset():
     global score_data, state, timer_running, startingsoundPlayed
-    team1:str = t1.get()
-    team2:str = t2.get()
+    team1:str = ent1.get()
+    team2:str = ent2.get()
     team1 = team1.split()
     team1[1] = f"{team1[0]} {team1[1]}"
 
@@ -261,9 +260,25 @@ def reset(t1:ttk.Entry, t2:ttk.Entry):
     updateFile(f"{score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*30}", "VData/score2.txt")
     updateFile(f"{team1[1]}", "VData/team1.txt")
     updateFile(f"{team2[1]}", "VData/team2.txt")
+    updateFileJson()
+
+    updatestate()
     
 
     asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
+
+
+def updateFileJson():
+    global score_data
+    with open("VData/data.json", 'w') as f:
+        data = {
+            "score1": score_data['plant1']*10+score_data['harvest1']*10+score_data['store1']*30,
+            "score2": score_data['plant2']*10+score_data['harvest2']*10+score_data['store2']*30,
+            "timer": score_data["time"],
+            "team1": score_data["team1"][1],
+            "team2": score_data["team2"][1]
+        }
+        json.dump(data, f)
 
 def timer():
     global timer_running, ltime, startTime, state, startingsoundPlayed
@@ -298,7 +313,7 @@ def timer():
                 if ltime >= 180:
                     ltime = 180
             if state == "preparing" or state == "ready":
-                if ltime <= 1 and state=="ready":
+                if ltime <= 1 and state=="ready" and timer_running == True:
                     score_data["time"] = "Goo!!"
                 else:
                     score_data["time"] = f"{int(ltime)}"
@@ -306,6 +321,8 @@ def timer():
             else:
                 score_data["time"] = f"{int(ltime//60)}:{int(ltime%60):02}"
                 updateFile(f"{int(ltime//60)}:{int(ltime%60):02}", "VData/timer.txt")
+
+            updateFileJson()
             
             asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
             time.sleep(0.1)
@@ -328,7 +345,7 @@ def updatestate():
     stateLabel.config(text=f"state: {state}")
     
 def run_gui():
-    global root, controller_label, display_label, stateLabel
+    global root, controller_label, display_label, stateLabel, ent1, ent2
 
     root = tk.Tk()
     root.title("WebSocket Server")
@@ -355,7 +372,7 @@ def run_gui():
 
     frame1.pack()
 
-    btt = ttk.Button(root, text="reset", command=lambda: reset(ent1, ent2))
+    btt = ttk.Button(root, text="reset", command=reset)
     btt.pack()
 
     t_btt = ttk.Button(root, text="Start Timer", command=startTImer)

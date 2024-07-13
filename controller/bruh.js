@@ -6,12 +6,11 @@ const colorPoints = {
   blue: 30,
 }
 
-// Scores for planting and harvesting
 let plantingTeam1Score = 0
 let plantingTeam2Score = 0
 let harvestingTeam1Score = 0
 let harvestingTeam2Score = 0
-const socket = new WebSocket('ws://192.168.8:8834');
+const socket = new WebSocket('ws://192.168.153.38:8834');
 
 socket.addEventListener('open', function (event) {
     console.log('WebSocket is connected.');
@@ -21,7 +20,7 @@ socket.addEventListener('message', function (event) {
     console.log('Message from server ', event.data);
 });
 
-function sendData(team, area, index, type) {
+function sendData(team, area, index) {
     const data = {
         team: team,
         area: area,
@@ -53,7 +52,6 @@ function changeColor(columnId, color) {
   const circles = column.getElementsByClassName('circle')
 
   for (let i = circles.length - 1; i >= 0; i--) {
-    // From bottom to top
     const circle = circles[i]
     if (circle.dataset.color === 'none') {
       updateCircle(circle, color)
@@ -67,7 +65,6 @@ function changeColor(columnId, color) {
   const circles = column.getElementsByClassName('circle')
 
   for (let i = circles.length - 1; i >= 0; i--) {
-    // From bottom to top
     const circle = circles[i]
     if (circle.dataset.color === 'none') {
       updateCircle(circle, color)
@@ -81,12 +78,10 @@ function updateCircle(circle, color) {
   const points = colorPoints[color]
   const currentPoints = colorPoints[currentColor]
 
-  // Update circle properties
   circle.dataset.color = color
   circle.dataset.points = points
   circle.style.backgroundColor = color
 
-  // Update team scores
   if (currentColor === 'red') {
     team1TotalScore -= currentPoints
   } else if (currentColor === 'blue') {
@@ -113,7 +108,6 @@ function undoColor(circleId) {
     team2TotalScore -= points
   }
 
-  // Reset circle properties
   circle.dataset.color = 'none'
   circle.dataset.points = 0
   circle.style.backgroundColor = '#eee'
@@ -132,7 +126,6 @@ function updateScores() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Harvesting Points
   document.getElementById('harvesting-minus-team1').addEventListener('click', function () {
     if (harvestingTeam1Score > 0) harvestingTeam1Score--
     updateScore('harvesting-score-team1', harvestingTeam1Score)
@@ -140,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
   })
 
   document.getElementById('harvesting-plus-team1').addEventListener('click', function () {
-    harvestingTeam1Score++
+    if (harvestingTeam1Score < 12) harvestingTeam1Score++
     updateScore('harvesting-score-team1', harvestingTeam1Score)
     updateScores()
   })
@@ -152,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
   })
 
   document.getElementById('harvesting-plus-team2').addEventListener('click', function () {
-    harvestingTeam2Score++
+    if (harvestingTeam2Score < 12) harvestingTeam2Score++
     updateScore('harvesting-score-team2', harvestingTeam2Score)
     updateScores()
   })
@@ -165,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
   })
 
   document.getElementById('planting-plus-team1').addEventListener('click', function () {
-    plantingTeam1Score++
+    if (plantingTeam1Score < 12) plantingTeam1Score++
     updateScore('planting-score-team1', plantingTeam1Score)
     updateScores()
   })
@@ -176,9 +169,9 @@ document.addEventListener('DOMContentLoaded', function () {
     updateScores()
   })
 
-  document.getElementById('planting-plus-team2').addEventListener('click', function () {
-    plantingTeam2Score++
-    updateScore('planting-score-team2', plantingTeam2Score)
+  document.getElementById('planting-plus-team1').addEventListener('click', function () {
+    if (plantingTeam1Score < 12) plantingTeam1Score++
+    updateScore('planting-score-team1', plantingTeam1Score)
     updateScores()
   })
 

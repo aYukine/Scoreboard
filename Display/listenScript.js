@@ -66,19 +66,17 @@ function updateScores(data) {
   } else{
     closeOverlay();
   }
+  smallCheyYo(data.cheyyo)
 }
 
 function openModal(imgSrc) {
   const modal = document.getElementById('modal');
   const imgElement = modal.querySelector('img');
 
-  // Update the image source
   imgElement.src = imgSrc;
 
-  // Show the modal
   modal.classList.remove('hidden');
 
-  // Set a timeout to close the modal after 3 seconds
   setTimeout(() => {
     modal.classList.add('hidden');
   }, 3000);
@@ -94,4 +92,17 @@ function openOverlay(text) {
 function closeOverlay() {
   const overlay = document.getElementById('overlay');
   overlay.style.display = 'none';
+}
+
+function smallCheyYo(d){
+  if(d==1){
+    document.getElementById("chey-red").src = "/public/j_white.PNG"
+    document.getElementById("chey-blue").src = ""
+  } else if(d==2){
+    document.getElementById("chey-red").src = ""
+    document.getElementById("chey-blue").src = "/public/j_white.PNG"
+  } else {
+    document.getElementById("chey-red").src = ""
+    document.getElementById("chey-blue").src = ""
+  }
 }
