@@ -19,11 +19,12 @@ ltime = 0
 timer_running = False
 state = "preparing"
 startTime = time.monotonic()
-PrepareTime = 20
+PrepareTime = 60
 readyTime = 10
 
 startingsoundPlayed = False
 startingsound = pygame.mixer.Sound("public/starting.mp3")
+winningsound = pygame.mixer.Sound("public/winning-sound.mp3")
 
 score_data = {
     'plant1': 0,
@@ -112,7 +113,7 @@ def findSuccessful(silo: list):
 
 
 async def handle_controller(websocket, path):
-    global controller_connections
+    global controller_connections, ltime
     controller_connections += 1
     update_connections()
 
@@ -182,6 +183,8 @@ async def handle_controller(websocket, path):
             await broadcast_to_displays(score_data_json)
 
             if(score_data['cheyyo']!=0 and score_data['cheyyoPlayed']==0):
+                winningsound.play()
+                print(f"{ltime//60}:{ltime%60}")
                 score_data['cheyyoPlayed'] = 1
             
             if(score_data['cheyyo'] == 0 and score_data['cheyyoPlayed']==1):
@@ -274,12 +277,14 @@ def timer():
                     state = "ready"
                     timer_running = False
                     score_data["bg_hidden"] = False
+                    updatestate()
 
             elif state == "ready":
                 if readyTime > dTime:
                     ltime = readyTime - dTime
                 else:
                     state = "play"
+                    updatestate()
                     startTime = time.monotonic()
                     score_data["bg_hidden"] = False
                 if ltime <= 4:
@@ -290,11 +295,17 @@ def timer():
             elif state == "play":
                 ltime = dTime
                 score_data["bg_hidden"] = False
+                if ltime >= 180:
+                    ltime = 180
             if state == "preparing" or state == "ready":
-                score_data["time"] = f"{int(ltime)}"
+                if ltime <= 1 and state=="ready":
+                    score_data["time"] = "Goo!!"
+                else:
+                    score_data["time"] = f"{int(ltime)}"
+                updateFile(f"{int(ltime)}", "VData/timer.txt")
             else:
                 score_data["time"] = f"{int(ltime//60)}:{int(ltime%60):02}"
-            updateFile(f"{int(ltime//60)}:{int(ltime%60):02}", "VData/timer.txt")
+                updateFile(f"{int(ltime//60)}:{int(ltime%60):02}", "VData/timer.txt")
             
             asyncio.run_coroutine_threadsafe(broadcast_to_displays(json.dumps(score_data)), server_loop)
             time.sleep(0.1)
@@ -306,9 +317,18 @@ def startTImer():
         timer_running = True
         score_data['bg_hidden'] = True
     
+def startTImer1():
+    global timer_running, ltime, startTime, state, score_data
+    state = "ready"
+    startTime = time.monotonic()
+    timer_running = True
+    score_data['bg_hidden'] = True
+
+def updatestate():
+    stateLabel.config(text=f"state: {state}")
     
 def run_gui():
-    global root, controller_label, display_label
+    global root, controller_label, display_label, stateLabel
 
     root = tk.Tk()
     root.title("WebSocket Server")
@@ -321,6 +341,9 @@ def run_gui():
 
     display_label = ttk.Label(root, text="Display Connected: No", font=30)
     display_label.pack()
+
+    stateLabel = ttk.Label(root, text=f"state: {state}", font=30)
+    stateLabel.pack()
 
     frame1 = ttk.Frame(root)
 
@@ -337,6 +360,9 @@ def run_gui():
 
     t_btt = ttk.Button(root, text="Start Timer", command=startTImer)
     t_btt.pack()
+
+    t_ready = ttk.Button(root, text="Start Ready", command=startTImer1)
+    t_ready.pack()
 
     update_connections()
 
